@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
 using namespace std;
 
 
@@ -23,6 +24,7 @@ float **heuristica;
 Cidade **cidades;
 int n_cidades;
 
+//Verifica se o No ja possui algum ancestral com o dado ID
 bool verif_ancestral(No* no, int id)
 {
     No* aux = no->pai;
@@ -46,19 +48,21 @@ No* gera_filho(No* atual)
     return filho;
 }
 
-void gera_todos(No* atual)
+void gera_todos(No* atual, bool *fechados)
 {
     atual->expandido = true;
     int i=0;
     while(atual->cidade->vizinhos[atual->iter_filhos]!= NULL)
     {
-        if(!verif_ancestral(atual,atual->cidade->vizinhos[atual->iter_filhos]->id))
+        int next_id = atual->cidade->vizinhos[atual->iter_filhos]->id;
+        if(!verif_ancestral(atual,next_id)&& !fechados[next_id])
         {
             No *filho = new No;
             filho->pai = atual;
             filho->iter_filhos=0;
             filho->filhos= new No*[n_cidades];
-            filho->cidade = atual->cidade->vizinhos[i];
+            for(int i=0; i<n_cidades;i++) filho->filhos[i] = NULL;
+            filho->cidade = atual->cidade->vizinhos[atual->iter_filhos];
             atual->filhos[i] = filho;
             i++;
         }
@@ -116,19 +120,90 @@ No* profundidade(int inicio, int objetivo)
 {
     No *raiz = new No;
     raiz->cidade= cidades[inicio];
+
     raiz->filhos= new No*[n_cidades];
+    for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+
     raiz->pai = NULL;
     raiz->iter_filhos=0;
     No *atual = raiz;
-    bool fechados[n_cidades] = {false};
+
+    bool fechados[n_cidades];
+    for(int i=0; i<n_cidades;i++) fechados[i] = false;
+
     if(inicio == objetivo) return raiz;
     while(true)
     {
-        if(!atual->expandido)gera_todos(atual);
+        if(!atual->expandido)gera_todos(atual,fechados);
+
+        No* filho = atual->filhos[atual->iter_filhos];
+
+        if(filho != NULL)
+        {
+            atual->iter_filhos++;
+
+            if(filho->cidade->id == objetivo) return raiz;
+
+            atual = filho;
+
+        }
+        else
+        {
+            if(atual->pai == NULL) return NULL;
+
+            fechados[atual->cidade->id] = true;
+            No* aux = atual;
+            atual = atual->pai;
+            delete aux->filhos;
+            delete aux;
+
+        }
 
     }
 
 
+
+}
+
+No* largura(int inicio, int objetivo)
+{
+    No *raiz = new No;
+    raiz->cidade= cidades[inicio];
+    raiz->filhos= new No*[n_cidades];
+    for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+    raiz->pai = NULL;
+    raiz->iter_filhos=0;
+    No *atual = raiz;
+    int tam = 0;
+    bool fechados[n_cidades];
+    for(int i=0; i<n_cidades;i++) fechados[i] = false;
+
+    vector<No*> fila;
+
+
+    //Inicia lista com filhos da raiz
+    gera_todos(raiz,fechados);
+    for(int i=0; i<n_cidades;i++)
+    {
+        if(atual->filhos[i]!= NULL)
+            fila.push_back(atual->filhos[i]);
+    }
+    tam = fila.size();
+
+    for(int i = 0; i <tam; i++)
+    {
+        fila[i]->pai->iter_filhos++;
+        if(fila[i]->cidade->id == objetivo) return raiz;
+        if(!fila[i]->expandido)gera_todos(fila[i],fechados);
+        for(int j=0; j<n_cidades;j++)
+            {
+                if(fila[i]->filhos[j]!= NULL)
+                    fila.push_back(fila[i]->filhos[j]);
+            }
+        tam = fila.size();
+
+    }
+    return NULL;
 
 }
 
@@ -193,7 +268,7 @@ int main()
     }
 
 
-    No* result = backtracking(7,6);
+    No* result = largura(7,6);
     float soma = 0;
     int id = result->cidade->id;
     while(result!=NULL)
