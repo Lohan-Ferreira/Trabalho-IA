@@ -95,7 +95,7 @@ No* backtracking(int inicio, int objetivo)
                 No *filho = gera_filho(atual);
 
                 if(filho->cidade->id == objetivo)
-                    return raiz;
+                    return filho;
                 atual = filho;
             }
             else
@@ -144,7 +144,7 @@ No* profundidade(int inicio, int objetivo)
         {
             atual->iter_filhos++;
 
-            if(filho->cidade->id == objetivo) return raiz;
+            if(filho->cidade->id == objetivo) return filho;
 
             atual = filho;
 
@@ -198,7 +198,7 @@ No* largura(int inicio, int objetivo)
     for(int i = 0; i <tam; i++)
     {
         fila[i]->pai->iter_filhos++;
-        if(fila[i]->cidade->id == objetivo) return raiz;
+        if(fila[i]->cidade->id == objetivo) return fila[i];
         if(!fila[i]->expandido)gera_todos(fila[i],fechados);
         for(int j=0; j<n_cidades;j++)
             {
@@ -211,6 +211,7 @@ No* largura(int inicio, int objetivo)
     return NULL;
 
 }
+
 
 No* ordenada (int inicio, int objetivo)
 {
@@ -425,7 +426,7 @@ int main()
     float soma = 0;
     while(result->pai!=NULL)
     {
-        cout<<result->cidade->id<<" ";
+        cout<<result->cidade->id<<" <- ";
         soma+= distancia[result->pai->cidade->id][result->cidade->id];
         result = result->pai;
     }
