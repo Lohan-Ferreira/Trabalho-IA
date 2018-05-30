@@ -17,6 +17,7 @@ struct No
     No **filhos;
     bool expandido = false;
     int iter_filhos;
+    float valor=0;
 };
 
 float **distancia;
@@ -63,6 +64,7 @@ void gera_todos(No* atual, bool *fechados)
             filho->filhos= new No*[n_cidades];
             for(int i=0; i<n_cidades;i++) filho->filhos[i] = NULL;
             filho->cidade = atual->cidade->vizinhos[atual->iter_filhos];
+            filho->valor = atual->valor + distancia[atual->cidade->id][filho->cidade->id];
             atual->filhos[i] = filho;
             i++;
         }
@@ -173,6 +175,9 @@ No* largura(int inicio, int objetivo)
     for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
     raiz->pai = NULL;
     raiz->iter_filhos=0;
+
+    if(inicio == objetivo) return raiz;
+
     No *atual = raiz;
     int tam = 0;
     bool fechados[n_cidades];
@@ -207,7 +212,140 @@ No* largura(int inicio, int objetivo)
 
 }
 
+No* ordenada (int inicio, int objetivo)
+{
+     No *raiz = new No;
+    raiz->cidade= cidades[inicio];
+    raiz->filhos= new No*[n_cidades];
+    for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+    raiz->pai = NULL;
+    raiz->iter_filhos=0;
 
+    if(inicio == objetivo) return raiz;
+
+    No *atual = raiz;
+    int tam = 0;
+    bool fechados[n_cidades];
+    for(int i=0; i<n_cidades;i++) fechados[i] = false;
+
+    vector<No*> fila;
+
+
+    //Inicia lista com filhos da raiz
+    gera_todos(raiz,fechados);
+    for(int i=0; i<n_cidades;i++)
+    {
+        if(atual->filhos[i]!= NULL)
+            fila.push_back(atual->filhos[i]);
+    }
+    tam = fila.size();
+
+    int menor;
+    int id;
+    while(true)
+    {
+        if(fila.empty()) return NULL;
+        menor = fila[0]->valor;
+        id=0;
+        for(int i=1; i<tam; i++)
+        {
+            if(menor > fila[i]->valor)
+            {
+                menor = fila[i]->valor;
+                id = i;
+
+            }
+
+        }
+
+        if(fila[id]->cidade->id == objetivo) return fila[id];
+
+        else
+        {
+
+            atual = fila[id];
+            if(!atual->expandido)gera_todos(atual,fechados);
+            fila.erase(fila.begin()+id);
+                for(int i=0; i<n_cidades;i++)
+                    {
+                        if(atual->filhos[i]!= NULL)
+                        fila.push_back(atual->filhos[i]);
+                    }
+            if(tam == fila.size()) fechados[id] = true;
+            else tam = fila.size();
+        }
+
+
+    }
+}
+
+
+No* gulosa (int inicio, int objetivo)
+{
+     No *raiz = new No;
+    raiz->cidade= cidades[inicio];
+    raiz->filhos= new No*[n_cidades];
+    for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+    raiz->pai = NULL;
+    raiz->iter_filhos=0;
+
+    if(inicio == objetivo) return raiz;
+
+    No *atual = raiz;
+    int tam = 0;
+    bool fechados[n_cidades];
+    for(int i=0; i<n_cidades;i++) fechados[i] = false;
+
+    vector<No*> fila;
+
+
+    //Inicia lista com filhos da raiz
+    gera_todos(raiz,fechados);
+    for(int i=0; i<n_cidades;i++)
+    {
+        if(atual->filhos[i]!= NULL)
+            fila.push_back(atual->filhos[i]);
+    }
+    tam = fila.size();
+
+    int menor;
+    int id;
+    while(true)
+    {
+        if(fila.empty()) return NULL;
+        menor = heuristica[atual->cidade->id][fila[0]->cidade->id];
+        id=0;
+        for(int i=1; i<tam; i++)
+        {
+            if(menor > heuristica[atual->cidade->id][fila[i]->cidade->id])
+            {
+                menor = heuristica[atual->cidade->id][fila[i]->cidade->id];
+                id = i;
+
+            }
+
+        }
+
+        if(fila[id]->cidade->id == objetivo) return fila[id];
+
+        else
+        {
+
+            atual = fila[id];
+            if(!atual->expandido)gera_todos(atual,fechados);
+            fila.erase(fila.begin()+id);
+                for(int i=0; i<n_cidades;i++)
+                    {
+                        if(atual->filhos[i]!= NULL)
+                        fila.push_back(atual->filhos[i]);
+                    }
+            if(tam == fila.size()) fechados[id] = true;
+            else tam = fila.size();
+        }
+
+
+    }
+}
 
 
 
@@ -268,7 +406,7 @@ int main()
     }
 
 
-    No* result = largura(7,6);
+  /*  No* result = largura(7,6);
     float soma = 0;
     int id = result->cidade->id;
     while(result!=NULL)
@@ -281,7 +419,20 @@ int main()
         result = result->filhos[result->iter_filhos-1];
 
     }
+    cout<<soma;*/
+
+    No* result = gulosa(7,6);
+    float soma = 0;
+    while(result->pai!=NULL)
+    {
+        cout<<result->cidade->id<<" ";
+        soma+= distancia[result->pai->cidade->id][result->cidade->id];
+        result = result->pai;
+    }
+    cout<<result->cidade->id<<" Total:";
     cout<<soma;
+
+
 
 
     return 0;
