@@ -17,7 +17,7 @@ struct No
     No **filhos;
     bool expandido = false;
     int iter_filhos;
-    float valor=0;
+    float valor=0.0;
 };
 
 float **distancia;
@@ -309,24 +309,25 @@ No* gulosa (int inicio, int objetivo)
     }
     tam = fila.size();
 
-    int menor;
+    float menor;
     int id;
     while(true)
     {
         if(fila.empty()) return NULL;
-        menor = heuristica[atual->cidade->id][fila[0]->cidade->id];
+        menor = heuristica[fila[0]->cidade->id][objetivo];
         id=0;
         for(int i=1; i<tam; i++)
         {
-            if(menor > heuristica[atual->cidade->id][fila[i]->cidade->id])
+            if(menor > heuristica[fila[i]->cidade->id][objetivo])
             {
-                menor = heuristica[atual->cidade->id][fila[i]->cidade->id];
+                menor = heuristica[fila[i]->cidade->id][objetivo];
                 id = i;
 
             }
 
         }
 
+        cout<<menor<<endl;
         if(fila[id]->cidade->id == objetivo) return fila[id];
 
         else
@@ -348,6 +349,75 @@ No* gulosa (int inicio, int objetivo)
     }
 }
 
+
+
+No* a_estrela (int inicio, int objetivo)
+{
+     No *raiz = new No;
+    raiz->cidade= cidades[inicio];
+    raiz->filhos= new No*[n_cidades];
+    for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+    raiz->pai = NULL;
+    raiz->iter_filhos=0;
+
+    if(inicio == objetivo) return raiz;
+
+    No *atual = raiz;
+    int tam = 0;
+    bool fechados[n_cidades];
+    for(int i=0; i<n_cidades;i++) fechados[i] = false;
+
+    vector<No*> fila;
+
+
+    //Inicia lista com filhos da raiz
+    gera_todos(raiz,fechados);
+    for(int i=0; i<n_cidades;i++)
+    {
+        if(atual->filhos[i]!= NULL)
+            fila.push_back(atual->filhos[i]);
+    }
+    tam = fila.size();
+
+    float menor;
+    int id;
+    while(true)
+    {
+        if(fila.empty()) return NULL;
+        menor = heuristica[fila[0]->cidade->id][objetivo]+fila[0]->valor;
+        id=0;
+        for(int i=1; i<tam; i++)
+        {
+
+            if(menor > heuristica[fila[i]->cidade->id][objetivo]+ fila[i]->valor)
+            {
+                menor = heuristica[fila[i]->cidade->id][objetivo] + fila[i]->valor;
+                id = i;
+
+
+            }
+
+        }
+        if(fila[id]->cidade->id == objetivo) return fila[id];
+
+        else
+        {
+
+            atual = fila[id];
+            if(!atual->expandido)gera_todos(atual,fechados);
+            fila.erase(fila.begin()+id);
+                for(int i=0; i<n_cidades;i++)
+                    {
+                        if(atual->filhos[i]!= NULL)
+                        fila.push_back(atual->filhos[i]);
+                    }
+            if(tam == fila.size()) fechados[id] = true;
+            else tam = fila.size();
+        }
+
+
+    }
+}
 
 
 
@@ -422,7 +492,7 @@ int main()
     }
     cout<<soma;*/
 
-    No* result = gulosa(7,6);
+    No* result = a_estrela(7,6);
     float soma = 0;
     while(result->pai!=NULL)
     {
