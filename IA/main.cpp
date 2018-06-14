@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <math.h>
 using namespace std;
 
 
@@ -419,11 +420,77 @@ No* a_estrela (int inicio, int objetivo)
     }
 }
 
+float calculaf(No* x, int fim){
+    No* aux = x;
+    float f = 0;
+    int mod;
+    if(aux->iter_filhos==0)
+        mod=0;
+    else
+        mod = 1;
+    while(aux->filhos[aux->iter_filhos-mod]!=NULL){
+        f+=distancia[aux->cidade->id][aux->filhos[aux->iter_filhos-mod]->cidade->id];
+        aux = aux->filhos[aux->iter_filhos-mod];
+        if(aux->iter_filhos==0)
+            mod=0;
+        else
+            mod = 1;
+    }
+    return f+heuristica[aux->cidade->id][fim];
+}
+
+No* ida_estrela(int inicio, int fim){
+    No* raiz = new No;
+    raiz->cidade= cidades[inicio];
+    raiz->filhos= new No*[n_cidades];
+    for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+    raiz->pai = NULL;
+    raiz->iter_filhos=0;
+
+    float patamar_old = -1, patamar = heuristica[inicio][fim], minDescartado = INFINITY;
+
+    No *atual = raiz;
+    while(true){
+            cout << patamar_old << "    " << patamar << "     " << atual->cidade->id << endl;
+        if(patamar==patamar_old)
+            return NULL;
+        else{
+            if(atual->cidade->id==fim && calculaf(raiz, fim)<patamar)
+                return atual;
+            else{
+                float f = calculaf(raiz, fim);
+                if(f>patamar){
+                  if(minDescartado>f)
+                    minDescartado = f;
+                  atual = atual->pai;
+                }
+                RNotEmpty:
+                if(atual->cidade->vizinhos[atual->iter_filhos]!= NULL){
+                    No* prox = gera_filho(atual);
+                    if(verif_ancestral(prox, prox->cidade->id)){
+                        atual->iter_filhos++;
+                        goto RNotEmpty;
+                    }
+                    atual = prox;
+                }else{
+                    if(atual->cidade->id==raiz->cidade->id){
+                        patamar_old = patamar;
+                        patamar = minDescartado;
+                        minDescartado = INFINITY;
+                        delete(raiz->filhos);
+                        raiz->filhos= new No*[n_cidades];
+                        for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+                        raiz->iter_filhos = 0;
+                    }else{
+                        atual = atual->pai;
+                    }
+                }
+            }
+        }
+    }
 
 
-
-
-
+}
 
 int main()
 {
@@ -492,17 +559,20 @@ int main()
     }
     cout<<soma;*/
 
-    No* result = a_estrela(7,6);
+    No* result = ida_estrela(7,6);
     float soma = 0;
-    while(result->pai!=NULL)
-    {
-        cout<<result->cidade->id<<" <- ";
-        soma+= distancia[result->pai->cidade->id][result->cidade->id];
-        result = result->pai;
+    if(result==NULL)
+        cout << "n encontrado";
+    else{
+        while(result->pai!=NULL)
+        {
+            cout<<result->cidade->id<<" <- ";
+            soma+= distancia[result->pai->cidade->id][result->cidade->id];
+            result = result->pai;
+        }
+        cout<<result->cidade->id<<" Total:";
+        cout<<soma;
     }
-    cout<<result->cidade->id<<" Total:";
-    cout<<soma;
-
 
 
 
