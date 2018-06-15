@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <math.h>
 using namespace std;
 
 
@@ -25,6 +24,7 @@ float **distancia;
 float **heuristica;
 Cidade **cidades;
 int n_cidades;
+float patamar = -1;
 
 //Verifica se o No ja possui algum ancestral com o dado ID
 bool verif_ancestral(No* no, int id)
@@ -45,6 +45,7 @@ No* gera_filho(No* atual)
     filho->iter_filhos=0;
     filho->filhos= new No*[n_cidades];
     filho->cidade = atual->cidade->vizinhos[atual->iter_filhos];
+    filho->valor = atual->valor + distancia[atual->cidade->id][filho->cidade->id];
     atual->filhos[atual->iter_filhos] = filho;
     atual->iter_filhos++;
     return filho;
@@ -351,7 +352,6 @@ No* gulosa (int inicio, int objetivo)
 }
 
 
-
 No* a_estrela (int inicio, int objetivo)
 {
      No *raiz = new No;
@@ -420,77 +420,75 @@ No* a_estrela (int inicio, int objetivo)
     }
 }
 
-float calculaf(No* x, int fim){
-    No* aux = x;
-    float f = 0;
-    int mod;
-    if(aux->iter_filhos==0)
-        mod=0;
-    else
-        mod = 1;
-    while(aux->filhos[aux->iter_filhos-mod]!=NULL){
-        f+=distancia[aux->cidade->id][aux->filhos[aux->iter_filhos-mod]->cidade->id];
-        aux = aux->filhos[aux->iter_filhos-mod];
-        if(aux->iter_filhos==0)
-            mod=0;
-        else
-            mod = 1;
-    }
-    return f+heuristica[aux->cidade->id][fim];
-}
-
-No* ida_estrela(int inicio, int fim){
-    No* raiz = new No;
+No* ida_estrela(int inicio, int objetivo)
+{
+    No *raiz = new No;
     raiz->cidade= cidades[inicio];
+    No** descartados = new No*[n_cidades];
+    int descarte = 0;
     raiz->filhos= new No*[n_cidades];
     for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
+
     raiz->pai = NULL;
     raiz->iter_filhos=0;
-
-    float patamar_old = -1, patamar = heuristica[inicio][fim], minDescartado = INFINITY;
-
     No *atual = raiz;
-    while(true){
-            cout << patamar_old << "    " << patamar << "     " << atual->cidade->id << endl;
-        if(patamar==patamar_old)
-            return NULL;
-        else{
-            if(atual->cidade->id==fim && calculaf(raiz, fim)<patamar)
-                return atual;
-            else{
-                float f = calculaf(raiz, fim);
-                if(f>patamar){
-                  if(minDescartado>f)
-                    minDescartado = f;
-                  atual = atual->pai;
+    patamar = heuristica[inicio][objetivo];
+    bool fechados[n_cidades];
+    for(int i=0; i<n_cidades;i++) fechados[i] = false;
+
+    while(true)
+    {
+        if(atual->cidade->vizinhos[atual->iter_filhos]!= NULL)
+        {
+            if(!verif_ancestral(atual,atual->cidade->vizinhos[atual->iter_filhos]->id))
+            {
+
+                No *filho = gera_filho(atual);
+                if(filho->valor + heuristica[filho->cidade->id][objetivo] > patamar + 0.000001) // +0.000001 para evitar erros numericos
+                {
+                    descartados[descarte] = filho;
+                    descarte++;
                 }
-                RNotEmpty:
-                if(atual->cidade->vizinhos[atual->iter_filhos]!= NULL){
-                    No* prox = gera_filho(atual);
-                    if(verif_ancestral(prox, prox->cidade->id)){
-                        atual->iter_filhos++;
-                        goto RNotEmpty;
-                    }
-                    atual = prox;
-                }else{
-                    if(atual->cidade->id==raiz->cidade->id){
-                        patamar_old = patamar;
-                        patamar = minDescartado;
-                        minDescartado = INFINITY;
-                        delete(raiz->filhos);
-                        raiz->filhos= new No*[n_cidades];
-                        for(int i=0; i<n_cidades;i++) raiz->filhos[i] = NULL;
-                        raiz->iter_filhos = 0;
-                    }else{
-                        atual = atual->pai;
-                    }
-                }
+                else if(filho->cidade->id == objetivo)
+                    return filho;
+                else atual = filho;
+            }
+            else
+            {
+                atual->iter_filhos++;
             }
         }
+
+        else if(atual == raiz)
+        {
+            if(descarte==0) return NULL;
+
+            float menor = descartados[0]->valor + heuristica[descartados[0]->cidade->id][objetivo];
+            for(int i=1; i < descarte; i++)
+                if(menor > descartados[i]->valor+heuristica[descartados[i]->cidade->id][objetivo])
+                    menor = descartados[i]->valor+heuristica[descartados[i]->cidade->id][objetivo];
+
+            if(menor == patamar) return NULL;
+
+            patamar = menor;
+            descarte = 0;
+            raiz->iter_filhos=0;
+
+        }
+        else
+        {
+            No *aux = atual;
+            atual = atual->pai;
+            delete aux->filhos;
+            delete aux;
+        }
+
     }
-
-
 }
+
+
+
+
 
 int main()
 {
@@ -561,18 +559,15 @@ int main()
 
     No* result = ida_estrela(7,6);
     float soma = 0;
-    if(result==NULL)
-        cout << "n encontrado";
-    else{
-        while(result->pai!=NULL)
-        {
-            cout<<result->cidade->id<<" <- ";
-            soma+= distancia[result->pai->cidade->id][result->cidade->id];
-            result = result->pai;
-        }
-        cout<<result->cidade->id<<" Total:";
-        cout<<soma;
+    while(result->pai!=NULL)
+    {
+        cout<<result->cidade->id<<" <- ";
+        soma+= distancia[result->pai->cidade->id][result->cidade->id];
+        result = result->pai;
     }
+    cout<<result->cidade->id<<" Total:";
+    cout<<soma;
+
 
 
 
