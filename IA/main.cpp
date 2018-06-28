@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <time.h>
 using namespace std;
 
 
@@ -25,6 +26,11 @@ float **heuristica;
 Cidade **cidades;
 int n_cidades;
 float patamar = -1;
+int aberto = 0;
+int fechado = 0;
+int expandido = 0;
+int ramificado = 0;
+clock_t ticks[2];
 
 //Verifica se o No ja possui algum ancestral com o dado ID
 bool verif_ancestral(No* no, int id)
@@ -40,6 +46,14 @@ bool verif_ancestral(No* no, int id)
 
 No* gera_filho(No* atual)
 {
+    aberto++;
+    ramificado++;
+    if(!atual->expandido)
+    {
+    atual->expandido = true;
+    expandido++;
+    }
+
     No *filho = new No;
     filho->pai = atual;
     filho->iter_filhos=0;
@@ -54,12 +68,18 @@ No* gera_filho(No* atual)
 void gera_todos(No* atual, bool *fechados)
 {
     atual->expandido = true;
+    fechados[atual->cidade->id] = true;
+    aberto--;
+    fechado++;
+    expandido++;
     int i=0;
     while(atual->cidade->vizinhos[atual->iter_filhos]!= NULL)
     {
         int next_id = atual->cidade->vizinhos[atual->iter_filhos]->id;
         if(!verif_ancestral(atual,next_id)&& !fechados[next_id])
         {
+            aberto++;
+            ramificado++;
             No *filho = new No;
             filho->pai = atual;
             filho->iter_filhos=0;
@@ -79,6 +99,11 @@ void gera_todos(No* atual, bool *fechados)
 
 No* backtracking(int inicio, int objetivo)
 {
+     aberto = 1;
+     fechado = 0;
+     ramificado = 0;
+     expandido = 0;
+
     No *raiz = new No;
     raiz->cidade= cidades[inicio];
     raiz->filhos= new No*[n_cidades];
@@ -93,9 +118,7 @@ No* backtracking(int inicio, int objetivo)
         {
             if(!verif_ancestral(atual,atual->cidade->vizinhos[atual->iter_filhos]->id))
             {
-
                 No *filho = gera_filho(atual);
-
                 if(filho->cidade->id == objetivo)
                     return filho;
                 atual = filho;
@@ -109,6 +132,8 @@ No* backtracking(int inicio, int objetivo)
         else if(atual == raiz) return NULL;
         else
         {
+            fechado++;
+            aberto--;
             No *aux = atual;
             atual = atual->pai;
             delete aux->filhos;
@@ -122,6 +147,10 @@ No* backtracking(int inicio, int objetivo)
 
 No* profundidade(int inicio, int objetivo)
 {
+    aberto = 1;
+     fechado = 0;
+     ramificado = 0;
+    expandido = 0;
     No *raiz = new No;
     raiz->cidade= cidades[inicio];
 
@@ -138,7 +167,10 @@ No* profundidade(int inicio, int objetivo)
     if(inicio == objetivo) return raiz;
     while(true)
     {
-        if(!atual->expandido)gera_todos(atual,fechados);
+        if(!atual->expandido)
+        {
+            gera_todos(atual,fechados);
+        }
 
         No* filho = atual->filhos[atual->iter_filhos];
 
@@ -154,8 +186,6 @@ No* profundidade(int inicio, int objetivo)
         else
         {
             if(atual->pai == NULL) return NULL;
-
-            fechados[atual->cidade->id] = true;
             No* aux = atual;
             atual = atual->pai;
             delete aux->filhos;
@@ -171,6 +201,10 @@ No* profundidade(int inicio, int objetivo)
 
 No* largura(int inicio, int objetivo)
 {
+     aberto = 1;
+     fechado = 0;
+     ramificado = 0;
+          expandido = 0;
     No *raiz = new No;
     raiz->cidade= cidades[inicio];
     raiz->filhos= new No*[n_cidades];
@@ -192,8 +226,8 @@ No* largura(int inicio, int objetivo)
     gera_todos(raiz,fechados);
     for(int i=0; i<n_cidades;i++)
     {
-        if(atual->filhos[i]!= NULL)
-            fila.push_back(atual->filhos[i]);
+        if(atual->filhos[i]!= NULL){
+            fila.push_back(atual->filhos[i]);}
     }
     tam = fila.size();
 
@@ -204,8 +238,9 @@ No* largura(int inicio, int objetivo)
         if(!fila[i]->expandido)gera_todos(fila[i],fechados);
         for(int j=0; j<n_cidades;j++)
             {
-                if(fila[i]->filhos[j]!= NULL)
+                if(fila[i]->filhos[j]!= NULL){
                     fila.push_back(fila[i]->filhos[j]);
+                }
             }
         tam = fila.size();
 
@@ -217,6 +252,10 @@ No* largura(int inicio, int objetivo)
 
 No* ordenada (int inicio, int objetivo)
 {
+    aberto = 1;
+     fechado = 0;
+     ramificado = 0;
+          expandido = 0;
      No *raiz = new No;
     raiz->cidade= cidades[inicio];
     raiz->filhos= new No*[n_cidades];
@@ -285,6 +324,10 @@ No* ordenada (int inicio, int objetivo)
 
 No* gulosa (int inicio, int objetivo)
 {
+     aberto = 1;
+     fechado = 0;
+     ramificado = 0;
+    expandido = 0;
      No *raiz = new No;
     raiz->cidade= cidades[inicio];
     raiz->filhos= new No*[n_cidades];
@@ -329,7 +372,6 @@ No* gulosa (int inicio, int objetivo)
 
         }
 
-        cout<<menor<<endl;
         if(fila[id]->cidade->id == objetivo) return fila[id];
 
         else
@@ -354,6 +396,10 @@ No* gulosa (int inicio, int objetivo)
 
 No* a_estrela (int inicio, int objetivo)
 {
+         aberto = 1;
+     fechado = 0;
+     ramificado = 0;
+    expandido = 0;
      No *raiz = new No;
     raiz->cidade= cidades[inicio];
     raiz->filhos= new No*[n_cidades];
@@ -422,6 +468,10 @@ No* a_estrela (int inicio, int objetivo)
 
 No* ida_estrela(int inicio, int objetivo)
 {
+    aberto = 1;
+     fechado = 0;
+     ramificado = 0;
+    expandido = 0;
     No *raiz = new No;
     raiz->cidade= cidades[inicio];
     No** descartados = new No*[n_cidades];
@@ -470,13 +520,20 @@ No* ida_estrela(int inicio, int objetivo)
 
             if(menor == patamar) return NULL;
 
+            for(int i=0; i<n_cidades;i++) fechados[i] = false;
             patamar = menor;
             descarte = 0;
             raiz->iter_filhos=0;
+            aberto = 1;
+            fechado = 0;
+            ramificado = 0;
+            expandido = 1;
 
         }
         else
         {
+            fechado++;
+            fechados[atual->cidade->id] = true;
             No *aux = atual;
             atual = atual->pai;
             delete aux->filhos;
@@ -486,6 +543,28 @@ No* ida_estrela(int inicio, int objetivo)
     }
 }
 
+void imprime_results(No* result)
+{
+    float soma = 0;
+    int profundidade=0;
+    cout<<'\n'<<"Caminho:";
+    while(result->pai!=NULL)
+    {
+        cout<<result->cidade->id<<" <- ";
+        soma+= distancia[result->pai->cidade->id][result->cidade->id];
+        profundidade++;
+        result = result->pai;
+    }
+    cout<<result->cidade->id<<" Custo:";
+    cout<<soma;
+    cout<<'\n'<<"Fator de ramificacao medio:"<<ramificado/(float)expandido;
+    cout<<'\n'<<"Abertos:"<<aberto;
+    cout<<'\n'<<"Fechados:"<<fechado;
+    cout<<'\n'<<"Profundidade:"<<profundidade;
+    cout<<'\n'<<"Expandidos:"<<expandido;
+    cout<<'\n'<<"Tempo (ms):"<<(ticks[1]- ticks[0]) * 1000.0 / CLOCKS_PER_SEC;
+    cout<<endl;
+}
 
 
 
@@ -557,16 +636,42 @@ int main()
     }
     cout<<soma;*/
 
-    No* result = ida_estrela(7,6);
-    float soma = 0;
-    while(result->pai!=NULL)
-    {
-        cout<<result->cidade->id<<" <- ";
-        soma+= distancia[result->pai->cidade->id][result->cidade->id];
-        result = result->pai;
-    }
-    cout<<result->cidade->id<<" Total:";
-    cout<<soma;
+    cout<<"Backtracking\n";
+    ticks[0] = clock();
+    No* result = backtracking(7,6);
+    ticks[1] = clock();
+    imprime_results(result);
+    cout<<"Profundidade\n";
+    ticks[0] = clock();
+    result = profundidade(7,6);
+    ticks[1] = clock();
+    imprime_results(result);
+    cout<<"Largura\n";
+    ticks[0] = clock();
+    result = largura(7,6);
+    ticks[1] = clock();
+    imprime_results(result);
+    cout<<"Ordenada\n";
+    ticks[0] = clock();
+    result = ordenada(7,6);
+    ticks[1] = clock();
+    imprime_results(result);
+    cout<<"Gulosa\n";
+    ticks[0] = clock();
+    result = gulosa(7,6);
+    ticks[1] = clock();
+    imprime_results(result);
+    cout<<"A*\n";
+    ticks[0] = clock();
+    result = a_estrela(7,6);
+    ticks[1] = clock();
+    imprime_results(result);
+    cout<<"IDA*\n";
+    ticks[0] = clock();
+    result = ida_estrela(7,6);
+    ticks[1] = clock();
+    imprime_results(result);
+
 
 
 
