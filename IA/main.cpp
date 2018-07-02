@@ -255,7 +255,7 @@ No* ordenada (int inicio, int objetivo)
     aberto = 1;
      fechado = 0;
      ramificado = 0;
-          expandido = 0;
+    expandido = 0;
      No *raiz = new No;
     raiz->cidade= cidades[inicio];
     raiz->filhos= new No*[n_cidades];
@@ -269,6 +269,7 @@ No* ordenada (int inicio, int objetivo)
     int tam = 0;
     bool fechados[n_cidades];
     for(int i=0; i<n_cidades;i++) fechados[i] = false;
+
 
     vector<No*> fila;
 
@@ -304,17 +305,24 @@ No* ordenada (int inicio, int objetivo)
 
         else
         {
-
             atual = fila[id];
             if(!atual->expandido)gera_todos(atual,fechados);
             fila.erase(fila.begin()+id);
                 for(int i=0; i<n_cidades;i++)
                     {
                         if(atual->filhos[i]!= NULL)
-                        fila.push_back(atual->filhos[i]);
+                        {
+                            fila.push_back(atual->filhos[i]);
+                        }
                     }
-            if(tam == fila.size()) fechados[id] = true;
+
+            if(tam == fila.size()) fechados[atual->cidade->id] = true;
+
+
             else tam = fila.size();
+
+
+
         }
 
 
@@ -545,6 +553,11 @@ No* ida_estrela(int inicio, int objetivo)
 
 void imprime_results(No* result)
 {
+    if(result == NULL)
+    {
+        cout<<"Não encontrado"<<endl;
+        return;
+    }
     float soma = 0;
     int profundidade=0;
     cout<<'\n'<<"Caminho:";
@@ -563,7 +576,7 @@ void imprime_results(No* result)
     cout<<'\n'<<"Profundidade:"<<profundidade;
     cout<<'\n'<<"Expandidos:"<<expandido;
     cout<<'\n'<<"Tempo (ms):"<<(ticks[1]- ticks[0]) * 1000.0 / CLOCKS_PER_SEC;
-    cout<<endl;
+    cout<<endl<<endl;
 }
 
 
@@ -638,37 +651,37 @@ int main()
 
     cout<<"Backtracking\n";
     ticks[0] = clock();
-    No* result = backtracking(7,6);
+    No* result = backtracking(0,1);
     ticks[1] = clock();
     imprime_results(result);
     cout<<"Profundidade\n";
     ticks[0] = clock();
-    result = profundidade(7,6);
+    result = profundidade(0,1);
     ticks[1] = clock();
     imprime_results(result);
     cout<<"Largura\n";
     ticks[0] = clock();
-    result = largura(7,6);
+    result = largura(0,1);
     ticks[1] = clock();
     imprime_results(result);
     cout<<"Ordenada\n";
     ticks[0] = clock();
-    result = ordenada(7,6);
+    result = ordenada(0,1);
     ticks[1] = clock();
     imprime_results(result);
     cout<<"Gulosa\n";
     ticks[0] = clock();
-    result = gulosa(7,6);
+    result = gulosa(0,1);
     ticks[1] = clock();
     imprime_results(result);
     cout<<"A*\n";
     ticks[0] = clock();
-    result = a_estrela(7,6);
+    result = a_estrela(0,1);
     ticks[1] = clock();
     imprime_results(result);
     cout<<"IDA*\n";
     ticks[0] = clock();
-    result = ida_estrela(7,6);
+    result = ida_estrela(0,1);
     ticks[1] = clock();
     imprime_results(result);
 
